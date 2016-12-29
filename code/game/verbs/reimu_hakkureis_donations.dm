@@ -12,7 +12,7 @@ Cake-hat:/obj/item/clothing/head/cakehat:100
 Wizard hat:/obj/item/clothing/head/wizard/fake:100
 Flat-cap:/obj/item/clothing/head/flatcap:120
 Collectable rabbit ears:/obj/item/clothing/head/collectable/rabbitears:120
-Cardborg helment. Beep-boop!:/obj/item/clothing/head/cardborg:85
+Cardborg helment. Beep-boop!:/obj/item/clothing/head/cardborg:20
 Bear pelt:/obj/item/clothing/head/bearpelt:200
 
 Masks
@@ -59,7 +59,7 @@ Red poncho:/obj/item/clothing/suit/poncho/red:140
 Green poncho:/obj/item/clothing/suit/poncho/green:150
 Puffer jacket:/obj/item/clothing/suit/jacket/puffer:120
 Winter coat:/obj/item/clothing/suit/hooded/wintercoat:130
-Cardborg:/obj/item/clothing/suit/cardborg:190
+Cardborg:/obj/item/clothing/suit/cardborg:50
 
 Jumpsuits
 Vice Policeman:/obj/item/clothing/under/rank/vice:180
@@ -82,13 +82,13 @@ Psychedelic jumpsuit:/obj/item/clothing/under/rank/psyche:220
 
 
 Gloves
-White:/obj/item/clothing/gloves/color/white:130
-Rainbow:/obj/item/clothing/gloves/color/rainbow:200
-Black:/obj/item/clothing/gloves/color/black:160
-Boxing:/obj/item/clothing/gloves/boxing:120
-Green gloves:/obj/item/clothing/gloves/color/green:100
-Latex gloves:/obj/item/clothing/gloves/color/latex:150
-Fingerless gloves:/obj/item/clothing/gloves/fingerless:90
+White Gloves:/obj/item/clothing/gloves/color/white:130
+Rainbow Gloves:/obj/item/clothing/gloves/color/rainbow:200
+Black Gloves:/obj/item/clothing/gloves/color/black:160
+Boxing Gloves:/obj/item/clothing/gloves/boxing:120
+Green Gloves:/obj/item/clothing/gloves/color/green:100
+Latex Gloves:/obj/item/clothing/gloves/color/latex:150
+Fingerless Gloves:/obj/item/clothing/gloves/fingerless:90
 
 Bedsheets
 Clown Bedsheet:/obj/item/weapon/bedsheet/clown:100
@@ -104,20 +104,23 @@ Toy dualsaber:/obj/item/weapon/twohanded/dualsaber/toy:300
 Rainbow crayon:/obj/item/toy/crayon/rainbow:250
 
 Special Stuff
-Santabag:/obj/item/weapon/storage/backpack/santabag:600
+Santa Bag:/obj/item/weapon/storage/backpack/santabag:600
 Bible:/obj/item/weapon/storage/book/bible:100
 "}
 
 
 var/list/datum/donator_prize/prizes = list()
 var/list/datum/donator/donators = list()
-var/agnoston = "agnoston"
+
+#define DONATIONS_SPAWN_WINDOW 6000
+// You can spawn donation items for 10 minutes without area limits.
+
 
 /datum/donator
 	var/ownerkey
 	var/money = 0
 	var/maxmoney = 0
-	var/allowed_num_items = 10 //rel lox
+	var/allowed_num_items = 10 //rel lox //sam lox
 
 /datum/donator/New(ckey, money)
 	..()
@@ -151,7 +154,11 @@ var/agnoston = "agnoston"
 	var/datum/donator_prize/prize = prizes[id]
 	var/mob/living/carbon/human/user = usr.client.mob
 
-	if(!istype(get_area(user), /area/shuttle/arrival))
+	if(!ticker || ticker.current_state < 3)
+		usr << "<span class='warning'>Please wait until game setting up!</span>"
+		return 0
+
+	if((world.time-round_start_time)>DONATIONS_SPAWN_WINDOW && !istype(get_area(user), /area/shuttle/arrival))
 		usr << "<span class='warning'>You must be on arrival shuttle to spawn items.</span>"
 		return 0
 
@@ -181,11 +188,10 @@ var/agnoston = "agnoston"
 		"hand" = slot_generic_dextrous_storage
 	)
 
-	var/obj/spawned = new prize.path_to
+	var/obj/spawned = new prize.path_to(user.loc)
 	var/where = user.equip_in_one_of_slots(spawned, slots, qdel_on_fail=0)
 
 	if (!where)
-		spawned.loc = user.loc
 		usr << "<span class='info'>Your [prize.item_name] has been spawned!</span>"
 	else
 		usr << "<span class='info'>Your [prize.item_name] has been spawned in your [where]!</span>"
@@ -245,7 +251,7 @@ proc/build_prizes_list()
 
 
 	if(!ticker || ticker.current_state < 3)
-		alert("Please wait until game setting up!")
+		usr << "<span class='warning'>Please wait until game setting up!</span>"
 		return
 
 	if (!donators[ckey]) //It doesn't exist yet
